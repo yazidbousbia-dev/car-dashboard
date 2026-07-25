@@ -4,7 +4,7 @@
 
 // Local dev by default — swap for your production API once deployed
 // (same pattern as the clinic dashboard: one line to flip environments).
-const API_BASE = 'http://autocars-production-7242.up.railway.app/api';
+const API_BASE = 'https://autocars-production-7242.up.railway.app/api';
 // const API_BASE = 'https://your-production-domain.com/api';
 
 // ---- Auth helpers ----
