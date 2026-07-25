@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Marché — Demandes d'achat</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+<div class="layout"></div>
+
+<!-- Request Detail Modal -->
+<div class="modal-overlay" id="reqDetailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" data-i18n="admin.requestDetails">Détails de la demande</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('reqDetailModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="reqDetailBody"></div>
+    <div class="modal-footer" id="reqDetailFooter"></div>
+  </div>
+</div>
+
+<script src="../js/utils.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('requests', t('admin.nav.requests'));
+
+let allRequests = [];
+let currentStatus = '';
+
+async function loadRequests() {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `
+    <div class="toolbar">
+      <select id="statusFilter" class="form-control" style="max-width:200px" onchange="setStatus(this.value)">
+        <option value="">${t('admin.allStatuses')}</option>
+        <option value="pending">${t('status.pending')}</option>
+        <option value="contacted">${t('status.contacted')}</option>
+        <option value="confirmed">${t('status.confirmed')}</option>
+        <option value="cancelled">${t('status.cancelled')}</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">${t('admin.nav.requests')}</span>
+        <span id="countBadge" class="badge badge-gray">—</span>
+      </div>
+      <div class="table-wrap"><div class="loading-center"><div class="spinner"></div></div></div>
+    </div>
+  `;
+  document.getElementById('statusFilter').value = currentStatus;
+
+  try {
+    const params = new URLSearchParams();
+    if (currentStatus) params.set('status', currentStatus);
+    params.set('per_page', 50);
+    const res = await api('GET', `/admin/requests?${params.toString()}`);
+    allRequests = res.data || [];
+    document.getElementById('countBadge').textContent = res.total ?? allRequests.length;
+    renderTable(allRequests);
+  } catch (e) {
+    document.querySelector('.table-wrap').innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>${e.message}</p></div>`;
+  }
+}
+
+function setStatus(val) {
+  currentStatus = val;
+  loadRequests();
+}
+
+function renderTable(requests) {
+  const wrap = document.querySelector('.table-wrap');
+  if (!requests.length) {
+    wrap.innerHTML = `<div class="empty-state"><i class="ti ti-clipboard-list"></i><p>${t('admin.noRequestsFound')}</p></div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>${t('dash.client')}</th><th class="col-hide-sm">${t('admin.phone')}</th><th>${t('dash.car')}</th>
+        <th class="col-hide-sm">${t('admin.date')}</th><th>${t('dash.status')}</th><th>${t('admin.actions')}</th>
+      </tr></thead>
+      <tbody>
+        ${requests.map(r => `
+          <tr onclick="openDetails(${r.id})">
+            <td>
+              <div style="font-weight:500">${r.user?.name || '—'}</div>
+              <div style="font-size:11px;color:var(--text-sub)">${r.user?.email || ''}</div>
+            </td>
+            <td class="col-hide-sm">${r.phone || r.user?.phone || '—'}</td>
+            <td>${r.car?.model || '—'} <span style="color:var(--text-sub)">(${fmtPrice(r.car?.price)})</span></td>
+            <td class="col-hide-sm">${fmtDate(r.created_at)}</td>
+            <td>${requestStatusBadge(r.status)}</td>
+            <td onclick="event.stopPropagation()">
+              <select class="form-control btn-sm" style="width:auto" onchange="updateStatus(${r.id}, this.value)">
+                <option value="">${t('admin.changeStatus')}</option>
+                <option value="pending" ${r.status==='pending'?'selected':''}>${t('status.pending')}</option>
+                <option value="contacted" ${r.status==='contacted'?'selected':''}>${t('status.contacted')}</option>
+                <option value="confirmed" ${r.status==='confirmed'?'selected':''}>${t('status.confirmed')}</option>
+                <option value="cancelled" ${r.status==='cancelled'?'selected':''}>${t('status.cancelled')}</option>
+              </select>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function updateStatus(id, status) {
+  if (!status) return;
+  try {
+    await api('PATCH', `/admin/requests/${id}/status`, { status });
+    showToast(t('admin.statusUpdated'), 'success');
+    loadRequests();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+function openDetails(id) {
+  const r = allRequests.find(x => x.id === id);
+  if (!r) return;
+
+  const rows = [
+    [t('dash.client'), r.user?.name || '—'],
+    [t('admin.email'), r.user?.email || '—'],
+    [t('admin.phone'), r.phone || r.user?.phone || '—'],
+    [t('dash.car'), r.car?.model || '—'],
+    [t('admin.price'), fmtPrice(r.car?.price)],
+    [t('admin.message'), r.message || '—'],
+    [t('admin.requestDate'), fmtDate(r.created_at)],
+    [t('dash.status'), requestStatusBadge(r.status)],
+  ];
+
+  document.getElementById('reqDetailBody').innerHTML = rows.map(([label, value]) => `
+    <div class="detail-row">
+      <span class="detail-label">${label}</span>
+      <span class="detail-value">${value}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('reqDetailFooter').innerHTML = `
+    <button class="btn btn-ghost" onclick="closeModal('reqDetailModal')">${t('admin.close')}</button>
+  `;
+
+  openModal('reqDetailModal');
+}
+
+loadRequests();
+</script>
+</body>
+</html>

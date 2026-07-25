@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Véhicules — AutoWeex</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="css/client.css">
+</head>
+<body class="aw">
+
+<div id="awNav" class="aw-nav"></div>
+
+<div class="aw-page-header">
+  <div class="aw-container">
+    <div class="aw-breadcrumb"><a href="index.html">Accueil</a><span class="sep">/</span>Véhicules</div>
+    <div class="aw-eyebrow">Catalogue complet</div>
+    <h1 class="aw-title">Tous nos <em>véhicules</em></h1>
+    <p class="aw-sub">Filtrez par marque, budget ou motorisation pour trouver le véhicule qui vous correspond.</p>
+  </div>
+</div>
+
+<section class="aw-section" style="padding-top:44px">
+  <div class="aw-container">
+
+    <div class="aw-filters">
+      <div class="aw-field search">
+        <label>Recherche</label>
+        <i class="ti ti-search"></i>
+        <input type="text" id="fSearch" placeholder="Marque, modèle…">
+      </div>
+      <div class="aw-field">
+        <label>Marque</label>
+        <select id="fBrand"><option value="">Toutes</option></select>
+      </div>
+      <div class="aw-field">
+        <label>État</label>
+        <select id="fCondition">
+          <option value="">Tous</option>
+          <option value="neuve">Neuve</option>
+          <option value="occasion">Occasion</option>
+        </select>
+      </div>
+      <div class="aw-field">
+        <label>Carburant</label>
+        <select id="fFuel">
+          <option value="">Tous</option>
+          <option value="essence">Essence</option>
+          <option value="diesel">Diesel</option>
+          <option value="hybride">Hybride</option>
+          <option value="electrique">Électrique</option>
+          <option value="gpl">GPL</option>
+        </select>
+      </div>
+      <div class="aw-field">
+        <label>Transmission</label>
+        <select id="fTrans">
+          <option value="">Toutes</option>
+          <option value="manuelle">Manuelle</option>
+          <option value="automatique">Automatique</option>
+        </select>
+      </div>
+      <button class="aw-btn aw-btn-gold" id="fReset"><i class="ti ti-refresh"></i> Réinitialiser</button>
+    </div>
+
+    <div class="aw-section-head" style="margin-bottom:20px">
+      <span id="resultCount" style="color:var(--texte-sub);font-size:13.5px"></span>
+    </div>
+
+    <div class="aw-cars-grid" id="carsGrid">
+      <div class="aw-spinner" style="grid-column:1/-1"></div>
+    </div>
+  </div>
+</section>
+
+<div id="awFooter" class="aw-footer"></div>
+
+<script src="../js/utils.js"></script>
+<script src="js/client.js"></script>
+<script>
+  awRenderNav('vehicules.html');
+  let ALL_CARS = [];
+
+  function applyFilters() {
+    const q = document.getElementById('fSearch').value.trim().toLowerCase();
+    const brand = document.getElementById('fBrand').value;
+    const cond = document.getElementById('fCondition').value;
+    const fuel = document.getElementById('fFuel').value;
+    const trans = document.getElementById('fTrans').value;
+
+    const filtered = ALL_CARS.filter(c => {
+      if (q && !`${c.brand} ${c.model}`.toLowerCase().includes(q)) return false;
+      if (brand && c.brand !== brand) return false;
+      if (cond && c.condition !== cond) return false;
+      if (fuel && c.fuel_type !== fuel) return false;
+      if (trans && c.transmission !== trans) return false;
+      return true;
+    });
+
+    const grid = document.getElementById('carsGrid');
+    document.getElementById('resultCount').textContent = `${filtered.length} véhicule${filtered.length !== 1 ? 's' : ''} trouvé${filtered.length !== 1 ? 's' : ''}`;
+    grid.innerHTML = filtered.length
+      ? filtered.map(awCarCard).join('')
+      : `<div class="aw-empty" style="grid-column:1/-1"><i class="ti ti-mood-empty"></i><h3>Aucun véhicule ne correspond</h3><p>Essayez d'élargir vos critères de recherche.</p></div>`;
+    awObserveNew(grid);
+  }
+
+  function populateBrands() {
+    const brands = [...new Set(ALL_CARS.map(c => c.brand))].sort();
+    const sel = document.getElementById('fBrand');
+    sel.innerHTML = '<option value="">Toutes</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+  }
+
+  awFetchCars().then(cars => {
+    ALL_CARS = cars;
+    populateBrands();
+
+    // Pré-remplissage des filtres via les paramètres d'URL (liens du footer/accueil)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('condition')) document.getElementById('fCondition').value = params.get('condition');
+    if (params.get('featured') === '1') ALL_CARS = ALL_CARS.filter(c => c.featured);
+
+    applyFilters();
+  });
+
+  ['fSearch', 'fBrand', 'fCondition', 'fFuel', 'fTrans'].forEach(id => {
+    document.getElementById(id).addEventListener('input', applyFilters);
+    document.getElementById(id).addEventListener('change', applyFilters);
+  });
+  document.getElementById('fReset').addEventListener('click', () => {
+    ['fSearch'].forEach(id => document.getElementById(id).value = '');
+    ['fBrand', 'fCondition', 'fFuel', 'fTrans'].forEach(id => document.getElementById(id).value = '');
+    applyFilters();
+  });
+
+  awInitReveal();
+</script>
+</body>
+</html>

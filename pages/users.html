@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Marché — Utilisateurs</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+<div class="layout"></div>
+<script src="../js/utils.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+Auth.guardPage(['admin']); // gestion des comptes : réservée à l'admin, pas à la secrétaire
+initLayout('users', t('admin.nav.users'));
+
+let currentSearch = '';
+let currentRole = '';
+
+async function loadUsers() {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `
+    <div class="toolbar">
+      <div class="search-box">
+        <i class="ti ti-search"></i>
+        <input id="searchInput" placeholder="${t('user.searchPh')}" value="${currentSearch}" oninput="handleSearch(this.value)">
+      </div>
+      <select id="roleFilter" class="form-control" style="max-width:170px" onchange="setRole(this.value)">
+        <option value="">${t('user.allRoles')}</option>
+        <option value="user">${t('user.roleUser')}</option>
+        <option value="admin">${t('user.roleAdmin')}</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">${t('user.list')}</span>
+        <span id="countBadge" class="badge badge-gray">—</span>
+      </div>
+      <div class="table-wrap"><div class="loading-center"><div class="spinner"></div></div></div>
+    </div>
+  `;
+  document.getElementById('roleFilter').value = currentRole;
+
+  try {
+    const params = new URLSearchParams();
+    if (currentSearch) params.set('search', currentSearch);
+    if (currentRole) params.set('role', currentRole);
+    const res = await api('GET', `/admin/users?${params.toString()}`);
+    const users = res.data || [];
+    document.getElementById('countBadge').textContent = res.total ?? users.length;
+    renderTable(users);
+  } catch (e) {
+    document.querySelector('.table-wrap').innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>${e.message}</p></div>`;
+  }
+}
+
+let searchTimer;
+function handleSearch(val) {
+  currentSearch = val;
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(loadUsers, 400);
+}
+function setRole(val) {
+  currentRole = val;
+  loadUsers();
+}
+
+function renderTable(users) {
+  const wrap = document.querySelector('.table-wrap');
+  if (!users.length) {
+    wrap.innerHTML = `<div class="empty-state"><i class="ti ti-users"></i><p>${t('user.none')}</p></div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>#</th><th>${t('user.name')}</th><th class="col-hide-sm">${t('admin.phone')}</th>
+        <th class="col-hide-sm">${t('auth.wilaya')}</th><th>${t('user.role')}</th><th>${t('user.status')}</th><th>${t('admin.actions')}</th>
+      </tr></thead>
+      <tbody>
+        ${users.map(u => `
+          <tr>
+            <td><span style="color:var(--text-muted)">${u.id}</span></td>
+            <td>
+              <div style="font-weight:500">${u.name}</div>
+              <div style="font-size:11px;color:var(--text-sub)">${u.email}</div>
+            </td>
+            <td class="col-hide-sm">${u.phone || '—'}</td>
+            <td class="col-hide-sm">${u.wilaya || '—'}</td>
+            <td><span class="badge ${u.role === 'admin' ? 'badge-blue' : 'badge-gray'}">${u.role === 'admin' ? t('user.roleAdmin') : t('user.roleUser')}</span></td>
+            <td>${userStatusBadge(u.is_verified)}</td>
+            <td>
+              ${u.role !== 'admin' ? `
+                <button class="btn btn-sm ${u.is_verified ? 'btn-danger' : ''}" style="${u.is_verified ? '' : 'background:var(--success-light);color:var(--success)'}" onclick="toggleBan(${u.id}, this)">
+                  <i class="ti ${u.is_verified ? 'ti-user-off' : 'ti-user-check'}"></i> ${u.is_verified ? t('user.ban') : t('user.unban')}
+                </button>
+              ` : '<span style="color:var(--text-muted);font-size:12px">—</span>'}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function toggleBan(id, btn) {
+  btn.disabled = true;
+  try {
+    await api('PATCH', `/admin/users/${id}/ban`);
+    showToast(t('user.accountStatusUpdated'), 'success');
+    loadUsers();
+  } catch (e) {
+    showToast(e.message, 'error');
+    btn.disabled = false;
+  }
+}
+
+loadUsers();
+</script>
+</body>
+</html>

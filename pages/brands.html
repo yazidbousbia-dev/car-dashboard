@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Marché — Marques</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+<div class="layout"></div>
+
+<!-- Add/Edit Brand Modal -->
+<div class="modal-overlay" id="brandModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="brandModalTitle" data-i18n="brand.newTitle">Nouvelle Marque</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('brandModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="brandId">
+      <div class="form-group">
+        <label class="form-label" data-i18n="brand.nameLabel">Nom de la marque *</label>
+        <input id="fBrandName" class="form-control" placeholder="Peugeot, Renault, Volkswagen..." data-i18n-placeholder="brand.namePlaceholder">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="brand.logoLabel">Logo (URL, optionnel)</label>
+        <input id="fBrandLogo" class="form-control" placeholder="https://...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('brandModal')" data-i18n="brand.cancel">Annuler</button>
+      <button id="saveBrandBtn" class="btn btn-primary" onclick="saveBrand()">
+        <i class="ti ti-device-floppy"></i> <span data-i18n="brand.save">Enregistrer</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/utils.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('brands', t('admin.nav.brands'));
+
+document.getElementById('topbarActions').innerHTML = `
+  <button class="btn btn-primary" onclick="openAddBrand()">
+    <i class="ti ti-plus"></i> ${t('brand.newTitle')}
+  </button>`;
+
+let allBrands = [];
+
+async function loadBrands() {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">${t('brand.list')}</span>
+        <span id="countBadge" class="badge badge-gray">—</span>
+      </div>
+      <div class="table-wrap"><div class="loading-center"><div class="spinner"></div></div></div>
+    </div>
+  `;
+  try {
+    allBrands = await api('GET', '/public/brands');
+    document.getElementById('countBadge').textContent = allBrands.length;
+    renderTable(allBrands);
+  } catch (e) {
+    document.querySelector('.table-wrap').innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>${e.message}</p></div>`;
+  }
+}
+
+function renderTable(brands) {
+  const wrap = document.querySelector('.table-wrap');
+  if (!brands.length) {
+    wrap.innerHTML = `<div class="empty-state"><i class="ti ti-tag"></i><p>${t('brand.none2')}</p></div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <table>
+      <thead><tr><th>#</th><th>${t('brand.logo')}</th><th>${t('user.name')}</th><th>${t('dash.car')}s</th><th>${t('admin.actions')}</th></tr></thead>
+      <tbody>
+        ${brands.map(b => `
+          <tr>
+            <td><span style="color:var(--text-muted)">${b.id}</span></td>
+            <td>${b.logo ? `<img class="thumb" src="${b.logo}" alt="">` : '<div class="thumb-placeholder"><i class="ti ti-tag"></i></div>'}</td>
+            <td style="font-weight:500">${b.name}</td>
+            <td>${b.cars_count ?? '—'}</td>
+            <td>
+              <button class="btn btn-ghost btn-sm" onclick="openEditBrand(${b.id})"><i class="ti ti-edit"></i></button>
+              <button class="btn btn-danger btn-sm" onclick="deleteBrand(${b.id}, '${b.name.replace(/'/g, "\\'")}')"><i class="ti ti-trash"></i></button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function openAddBrand() {
+  document.getElementById('brandModalTitle').textContent = t('brand.newTitle');
+  document.getElementById('brandId').value = '';
+  document.getElementById('fBrandName').value = '';
+  document.getElementById('fBrandLogo').value = '';
+  openModal('brandModal');
+}
+
+function openEditBrand(id) {
+  const b = allBrands.find(x => x.id === id);
+  if (!b) return;
+  document.getElementById('brandModalTitle').textContent = t('brand.editTitle');
+  document.getElementById('brandId').value = b.id;
+  document.getElementById('fBrandName').value = b.name || '';
+  document.getElementById('fBrandLogo').value = b.logo || '';
+  openModal('brandModal');
+}
+
+async function saveBrand() {
+  const id = document.getElementById('brandId').value;
+  const name = document.getElementById('fBrandName').value.trim();
+  const logo = document.getElementById('fBrandLogo').value.trim() || null;
+
+  if (!name) { showToast(t('brand.nameRequired'), 'error'); return; }
+
+  const btn = document.getElementById('saveBrandBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px"></span>';
+
+  try {
+    if (id) {
+      await api('PUT', `/admin/brands/${id}`, { name, logo });
+      showToast(t('brand.updated'), 'success');
+    } else {
+      await api('POST', '/admin/brands', { name, logo });
+      showToast(t('brand.created'), 'success');
+    }
+    closeModal('brandModal');
+    loadBrands();
+  } catch (e) {
+    showToast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="ti ti-device-floppy"></i> ${t('brand.save')}`;
+  }
+}
+
+async function deleteBrand(id, name) {
+  if (!confirm(`${t('brand.confirmDeleteFull')} "${name}"${t('brand.confirmDeleteSuffix')}`)) return;
+  try {
+    await api('DELETE', `/admin/brands/${id}`);
+    showToast(t('brand.deleted'), 'success');
+    loadBrands();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+loadBrands();
+</script>
+</body>
+</html>

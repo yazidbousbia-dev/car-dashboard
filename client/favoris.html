@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mes favoris — AutoWeex</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="css/client.css">
+</head>
+<body class="aw">
+
+<div id="awNav" class="aw-nav"></div>
+
+<div class="aw-page-header">
+  <div class="aw-container">
+    <div class="aw-breadcrumb"><a href="index.html">Accueil</a><span class="sep">/</span>Favoris</div>
+    <div class="aw-eyebrow">Votre sélection</div>
+    <h1 class="aw-title">Mes véhicules <em>favoris</em></h1>
+    <p class="aw-sub">Retrouvez ici les véhicules que vous avez enregistrés, conservés sur cet appareil.</p>
+  </div>
+</div>
+
+<section class="aw-section" style="padding-top:44px">
+  <div class="aw-container">
+    <div class="aw-cars-grid" id="favGrid">
+      <div class="aw-spinner" style="grid-column:1/-1"></div>
+    </div>
+  </div>
+</section>
+
+<div id="awFooter" class="aw-footer"></div>
+
+<script src="../js/utils.js"></script>
+<script src="js/client.js"></script>
+<script>
+  awRenderNav('favoris.html');
+
+  awFetchCars().then(cars => {
+    const favMap = AwFav.all();
+    const favIds = Object.keys(favMap);
+    const grid = document.getElementById('favGrid');
+
+    if (!favIds.length) {
+      grid.outerHTML = `<div class="aw-empty"><i class="ti ti-heart-off"></i><h3>Aucun favori pour l'instant</h3><p>Parcourez nos véhicules et cliquez sur le cœur pour les enregistrer ici.</p><br><a href="vehicules.html" class="aw-btn aw-btn-gold">Voir les véhicules</a></div>`;
+      return;
+    }
+
+    const favCars = favIds.map(id => cars.find(c => String(c.id) === String(id)) || favMap[id]);
+    grid.innerHTML = favCars.map(awCarCard).join('');
+    awObserveNew(grid);
+  });
+
+  awInitReveal();
+</script>
+</body>
+</html>

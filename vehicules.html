@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Véhicules — AutoWeex</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="css/client.css">
+</head>
+<body class="aw">
+
+<div id="awNav" class="aw-nav"></div>
+
+<div class="aw-page-header">
+  <div class="aw-container">
+    <div class="aw-breadcrumb"><a href="index.html" data-i18n="nav.home">Accueil</a><span class="sep">/</span><span data-i18n="cars.breadcrumb">Véhicules</span></div>
+    <div class="aw-eyebrow" data-i18n="cars.eyebrow">Catalogue complet</div>
+    <h1 class="aw-title" data-i18n-html="cars.title">Tous nos <em>véhicules</em></h1>
+    <p class="aw-sub" data-i18n="cars.sub">Filtrez par marque, budget ou motorisation pour trouver le véhicule qui vous correspond.</p>
+  </div>
+</div>
+
+<section class="aw-section" style="padding-top:44px">
+  <div class="aw-container">
+
+    <div class="aw-filters">
+      <div class="aw-field search">
+        <label data-i18n="cars.filter.search">Recherche</label>
+        <i class="ti ti-search"></i>
+        <input type="text" id="fSearch" placeholder="Marque, modèle…" data-i18n-placeholder="cars.filter.searchPh">
+      </div>
+      <div class="aw-field">
+        <label data-i18n="cars.filter.brand">Marque</label>
+        <select id="fBrand"><option value="" data-i18n="cars.filter.all">Toutes</option></select>
+      </div>
+      <div class="aw-field">
+        <label data-i18n="cars.filter.condition">État</label>
+        <select id="fCondition">
+          <option value="" data-i18n="cars.filter.allM">Tous</option>
+          <option value="neuve" data-i18n="cars.filter.new">Neuve</option>
+          <option value="occasion" data-i18n="cars.filter.used">Occasion</option>
+        </select>
+      </div>
+      <div class="aw-field">
+        <label data-i18n="cars.filter.fuel">Carburant</label>
+        <select id="fFuel">
+          <option value="" data-i18n="cars.filter.allM">Tous</option>
+          <option value="essence" data-i18n="cars.fuel.essence">Essence</option>
+          <option value="diesel" data-i18n="cars.fuel.diesel">Diesel</option>
+          <option value="hybride" data-i18n="cars.fuel.hybride">Hybride</option>
+          <option value="electrique" data-i18n="cars.fuel.electrique">Électrique</option>
+          <option value="gpl" data-i18n="cars.fuel.gpl">GPL</option>
+        </select>
+      </div>
+      <div class="aw-field">
+        <label data-i18n="cars.filter.trans">Transmission</label>
+        <select id="fTrans">
+          <option value="" data-i18n="cars.filter.all">Toutes</option>
+          <option value="manuelle" data-i18n="cars.trans.manuelle">Manuelle</option>
+          <option value="automatique" data-i18n="cars.trans.automatique">Automatique</option>
+        </select>
+      </div>
+      <button class="aw-btn aw-btn-gold" id="fReset"><i class="ti ti-refresh"></i> <span data-i18n="cars.filter.reset">Réinitialiser</span></button>
+    </div>
+
+    <div class="aw-section-head" style="margin-bottom:20px">
+      <span id="resultCount" style="color:var(--texte-sub);font-size:13.5px"></span>
+    </div>
+
+    <div class="aw-cars-grid" id="carsGrid">
+      <div class="aw-spinner" style="grid-column:1/-1"></div>
+    </div>
+  </div>
+</section>
+
+<div id="awFooter" class="aw-footer"></div>
+
+<script src="js/utils.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/theme.js"></script>
+<script>
+  // Page protégée : un visiteur non connecté est renvoyé vers login.html
+  // (avec retour automatique sur cette page une fois connecté).
+  Auth.guardClientPage();
+</script>
+<script src="js/client.js"></script>
+<script>
+  awRenderNav('vehicules.html');
+  let ALL_CARS = [];
+  let favsReady = awLoadFavoriteIds();
+
+  function applyFilters() {
+    const q = document.getElementById('fSearch').value.trim().toLowerCase();
+    const brand = document.getElementById('fBrand').value;
+    const cond = document.getElementById('fCondition').value;
+    const fuel = document.getElementById('fFuel').value;
+    const trans = document.getElementById('fTrans').value;
+
+    const filtered = ALL_CARS.filter(c => {
+      if (q && !`${c.brand} ${c.model}`.toLowerCase().includes(q)) return false;
+      if (brand && c.brand !== brand) return false;
+      if (cond && c.condition !== cond) return false;
+      if (fuel && c.fuel_type !== fuel) return false;
+      if (trans && c.transmission !== trans) return false;
+      return true;
+    });
+
+    const grid = document.getElementById('carsGrid');
+    document.getElementById('resultCount').textContent = `${filtered.length} ${filtered.length !== 1 ? t('cars.resultCount.many') : t('cars.resultCount.one')}`;
+    grid.innerHTML = filtered.length
+      ? filtered.map(awCarCard).join('')
+      : `<div class="aw-empty" style="grid-column:1/-1"><i class="ti ti-mood-empty"></i><h3>${t('cars.empty.title')}</h3><p>${t('cars.empty.desc')}</p></div>`;
+    awObserveNew(grid);
+  }
+
+  function populateBrands() {
+    const brands = [...new Set(ALL_CARS.map(c => c.brand))].sort();
+    const sel = document.getElementById('fBrand');
+    sel.innerHTML = `<option value="">${t('cars.filter.all')}</option>` + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+  }
+
+  Promise.all([awFetchCars(), favsReady]).then(([cars]) => {
+    ALL_CARS = cars;
+    populateBrands();
+
+    // Pré-remplissage des filtres via les paramètres d'URL (liens du footer/accueil)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('condition')) document.getElementById('fCondition').value = params.get('condition');
+    if (params.get('featured') === '1') ALL_CARS = ALL_CARS.filter(c => c.featured);
+
+    applyFilters();
+  }).catch(err => awCarsGridError(document.getElementById('carsGrid'), err, () => location.reload()));
+
+  ['fSearch', 'fBrand', 'fCondition', 'fFuel', 'fTrans'].forEach(id => {
+    document.getElementById(id).addEventListener('input', applyFilters);
+    document.getElementById(id).addEventListener('change', applyFilters);
+  });
+  document.getElementById('fReset').addEventListener('click', () => {
+    ['fSearch'].forEach(id => document.getElementById(id).value = '');
+    ['fBrand', 'fCondition', 'fFuel', 'fTrans'].forEach(id => document.getElementById(id).value = '');
+    applyFilters();
+  });
+
+  awInitReveal();
+</script>
+</body>
+</html>

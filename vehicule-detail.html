@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Détails du véhicule — AutoWeex</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="css/client.css">
+</head>
+<body class="aw">
+
+<div id="awNav" class="aw-nav"></div>
+
+<div class="aw-page-header" style="padding-bottom:40px">
+  <div class="aw-container">
+    <div class="aw-breadcrumb"><a href="index.html" data-i18n="nav.home">Accueil</a><span class="sep">/</span><a href="vehicules.html" data-i18n="detail.breadcrumb.cars">Véhicules</a><span class="sep">/</span><span id="bcTitle">…</span></div>
+  </div>
+</div>
+
+<section class="aw-section" style="padding-top:36px">
+  <div class="aw-container" id="detailWrap">
+    <div class="aw-spinner"></div>
+  </div>
+</section>
+
+<!-- Véhicules similaires -->
+<section class="aw-section" style="background:var(--noir-2)">
+  <div class="aw-container">
+    <div class="aw-section-head">
+      <div>
+        <div class="aw-eyebrow" data-i18n="detail.similar.eyebrow">Vous aimerez aussi</div>
+        <h2 class="aw-title" data-i18n-html="detail.similar.title">Véhicules <em>similaires</em></h2>
+      </div>
+    </div>
+    <div class="aw-cars-grid" id="relatedGrid"></div>
+  </div>
+</section>
+
+<div id="awFooter" class="aw-footer"></div>
+
+<script src="js/utils.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/theme.js"></script>
+<script>
+  // Page protégée : un visiteur non connecté est renvoyé vers login.html
+  // (avec retour automatique sur cette fiche véhicule une fois connecté).
+  Auth.guardClientPage();
+</script>
+<script src="js/client.js"></script>
+<script>
+  awRenderNav('vehicules.html');
+
+  const carId = new URLSearchParams(window.location.search).get('id');
+  const detailWrap = document.getElementById('detailWrap');
+
+  if (!carId) {
+    detailWrap.innerHTML = `<div class="aw-empty"><i class="ti ti-car-off"></i><h3>${t('detail.notFoundTitle')}</h3><p>${t('detail.notFoundDesc')}</p><br><a href="vehicules.html" class="aw-btn aw-btn-gold">${t('detail.backCatalog')}</a></div>`;
+  } else {
+    Promise.all([awFetchCar(carId), awLoadFavoriteIds()])
+      .then(([car]) => renderDetail(car))
+      .catch(err => {
+        detailWrap.innerHTML = `<div class="aw-empty"><i class="ti ti-car-off"></i><h3>${t('detail.notFoundTitle')}</h3><p>${err.message || t('detail.notFoundDesc2')}</p><br><a href="vehicules.html" class="aw-btn aw-btn-gold">${t('detail.backCatalog')}</a></div>`;
+      });
+
+    // Véhicules similaires — chargés indépendamment, une éventuelle erreur ici n'empêche pas d'afficher la fiche.
+    awFetchCars().then(cars => {
+      const related = cars.filter(c => String(c.id) !== String(carId));
+      const relGrid = document.getElementById('relatedGrid');
+      relGrid.innerHTML = related.slice(0, 3).map(awCarCard).join('');
+      awObserveNew(relGrid);
+    }).catch(() => { document.getElementById('relatedGrid').closest('section').style.display = 'none'; });
+  }
+
+  function renderDetail(car) {
+    document.title = `${car.brand} ${car.model} — AutoWeex`;
+    document.getElementById('bcTitle').textContent = `${car.brand} ${car.model}`;
+
+    const images = car.images && car.images.length ? car.images : (car.image ? [car.image] : []);
+    const mainMedia = images.length
+      ? `<img src="${images[0]}" alt="${car.brand} ${car.model}" id="mainImg">`
+      : `<i class="ti ${car.glyph || 'ti-car'}"></i>`;
+    const thumbs = images.length > 1
+      ? `<div class="aw-gallery-thumbs">${images.map((img, i) => `<div class="thumb ${i === 0 ? 'active' : ''}" data-img="${img}"><img src="${img}"></div>`).join('')}</div>`
+      : '';
+
+    const isFav = awIsFav(car.id);
+
+    detailWrap.innerHTML = `
+      <div class="aw-detail-grid">
+        <div>
+          <div class="aw-gallery-main">${mainMedia}</div>
+          ${thumbs}
+          <div class="aw-desc-block">
+            <h3 style="font-family:var(--font-display);font-weight:400;color:var(--blanc);font-size:20px;margin-bottom:10px">${t('detail.description')}</h3>
+            <p>${car.description || `Ce ${car.brand} ${car.model} ${car.year} ${t('detail.defaultDesc')}`}</p>
+          </div>
+        </div>
+        <div class="aw-detail-side">
+          <div class="aw-price-card">
+            <div class="cond" style="display:flex;justify-content:space-between;align-items:center">
+              <span>${car.brand} · ${car.model}</span>
+              <button class="aw-fav-heart ${isFav ? 'active' : ''}" data-fav-toggle="${car.id}" style="position:static"><i class="ti ${isFav ? 'ti-heart-filled' : 'ti-heart'}"></i></button>
+            </div>
+            <div class="price">${Number(car.price || 0).toLocaleString('fr-DZ')} DA</div>
+            <div class="cond">${car.condition === 'neuve' ? t('detail.newCar') : t('detail.usedCar')} · ${car.year ?? '—'}</div>
+
+            <div class="aw-spec-list">
+              <div class="aw-spec-item"><span>${t('detail.mileage')}</span><b>${car.mileage != null ? Number(car.mileage).toLocaleString('fr-DZ') + ' km' : '—'}</b></div>
+              <div class="aw-spec-item"><span>${t('detail.fuel')}</span><b>${(typeof FUEL_LABELS !== 'undefined' && FUEL_LABELS[car.fuel_type]) || car.fuel_type || '—'}</b></div>
+              <div class="aw-spec-item"><span>${t('detail.transmission')}</span><b>${(typeof TRANSMISSION_LABELS !== 'undefined' && TRANSMISSION_LABELS[car.transmission]) || car.transmission || '—'}</b></div>
+              <div class="aw-spec-item"><span>${t('detail.condition')}</span><b>${(typeof CONDITION_LABELS !== 'undefined' && CONDITION_LABELS[car.condition]) || car.condition || '—'}</b></div>
+            </div>
+
+            <form id="reqForm" style="display:flex;flex-direction:column;gap:10px;margin-bottom:6px">
+              <div class="aw-form-group" style="margin-bottom:0">
+                <label>${t('detail.phoneOpt')}</label>
+                <input type="tel" id="reqPhone" placeholder="0X XX XX XX XX">
+              </div>
+              <div class="aw-form-group" style="margin-bottom:0">
+                <label>${t('detail.messageOpt')}</label>
+                <textarea id="reqMessage" rows="2" placeholder="${t('detail.questionPh')}"></textarea>
+              </div>
+              <button type="submit" id="reqBtn" class="aw-btn aw-btn-gold aw-btn-block"><i class="ti ti-message-circle"></i> ${t('detail.requestBtn')}</button>
+            </form>
+            <a href="tel:+213555000000" class="aw-btn aw-btn-outline aw-btn-block"><i class="ti ti-phone"></i> ${t('detail.callSeller')}</a>
+
+            <div class="aw-dealer-card">
+              <div class="aw-dealer-avatar"><i class="ti ti-building-store"></i></div>
+              <div>
+                <b style="display:block;font-size:13.5px;color:var(--blanc)">AutoWeex Showroom</b>
+                <span style="font-size:12px;color:var(--texte-sub)">${t('detail.verifiedSeller')} · Taher, Jijel</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    // Galerie : changer l'image principale au clic sur une miniature
+    document.querySelectorAll('.aw-gallery-thumbs .thumb').forEach(t => {
+      t.addEventListener('click', () => {
+        document.getElementById('mainImg').src = t.dataset.img;
+        document.querySelectorAll('.aw-gallery-thumbs .thumb').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+      });
+    });
+
+    document.getElementById('reqForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('reqBtn');
+      const original = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i class="ti ti-loader-2"></i> ${t('detail.sending')}`;
+      const ok = await awSubmitPurchaseRequest(car.id, {
+        phone: document.getElementById('reqPhone').value.trim(),
+        message: document.getElementById('reqMessage').value.trim(),
+      });
+      btn.disabled = false;
+      btn.innerHTML = original;
+      if (ok) e.target.reset();
+    });
+  }
+</script>
+</body>
+</html>

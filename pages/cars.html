@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Marché — Annonces</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div class="layout"></div>
+
+<!-- Add/Edit Car Modal -->
+<div class="modal-overlay" id="carModal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <span class="modal-title" id="carModalTitle" data-i18n="car.newTitle">Nouvelle Annonce</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('carModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="carId">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" data-i18n="car.brandLabel">Marque *</label>
+          <select id="fBrand" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="car.modelLabel">Modèle *</label>
+          <input id="fModel" class="form-control" placeholder="308, Clio, Golf..." data-i18n-placeholder="car.modelPh">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" data-i18n="car.yearLabel">Année *</label>
+          <input id="fYear" type="number" class="form-control" placeholder="2022">
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="car.priceLabel">Prix (DA) *</label>
+          <input id="fPrice" type="number" class="form-control" placeholder="2500000">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" data-i18n="car.mileageLabel">Kilométrage *</label>
+          <input id="fMileage" type="number" class="form-control" placeholder="45000">
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="car.quantityLabel">Quantité en stock</label>
+          <input id="fQuantity" type="number" min="1" class="form-control" placeholder="1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" data-i18n="car.fuelLabel">Carburant *</label>
+          <select id="fFuel" class="form-control">
+            <option value="essence" data-i18n="cars.fuel.essence">Essence</option>
+            <option value="diesel" data-i18n="cars.fuel.diesel">Diesel</option>
+            <option value="hybride" data-i18n="cars.fuel.hybride">Hybride</option>
+            <option value="electrique" data-i18n="cars.fuel.electrique">Électrique</option>
+            <option value="gpl" data-i18n="cars.fuel.gpl">GPL</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="car.transLabel">Transmission *</label>
+          <select id="fTransmission" class="form-control">
+            <option value="manuelle" data-i18n="cars.trans.manuelle">Manuelle</option>
+            <option value="automatique" data-i18n="cars.trans.automatique">Automatique</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" data-i18n="car.conditionLabel">État *</label>
+          <select id="fCondition" class="form-control">
+            <option value="neuve" data-i18n="cars.filter.new">Neuve</option>
+            <option value="occasion" data-i18n="cars.filter.used">Occasion</option>
+            <option value="accidentee" data-i18n="car.conditionAccident">Accidentée</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="car.colorLabel">Couleur</label>
+          <input id="fColor" class="form-control" placeholder="Blanc, Noir..." data-i18n-placeholder="car.colorPh">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" data-i18n="car.wilayaLabel">Wilaya *</label>
+          <input id="fWilaya" class="form-control" placeholder="Alger, Oran, Constantine..." data-i18n-placeholder="car.wilayaPh">
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="car.cityLabel">Ville</label>
+          <input id="fCity" class="form-control" placeholder="Bab Ezzouar..." data-i18n-placeholder="car.cityPh">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="car.doorsLabel">Nombre de portes</label>
+        <input id="fDoors" type="number" min="2" max="6" class="form-control" placeholder="5">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="detail.description">Description</label>
+        <textarea id="fDescription" class="form-control" rows="3" placeholder="État général, options, historique..." data-i18n-placeholder="car.descriptionPh"></textarea>
+      </div>
+
+      <!-- Images -->
+      <div class="form-group">
+        <label class="form-label" data-i18n="car.photosLabel">Photos</label>
+        <div class="img-upload-grid" id="imgGrid"></div>
+        <input type="file" id="fImages" accept="image/*" multiple style="display:none" onchange="handleImageSelect(event)">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('carModal')" data-i18n="brand.cancel">Annuler</button>
+      <button id="saveCarBtn" class="btn btn-primary" onclick="saveCar()">
+        <i class="ti ti-device-floppy"></i> <span data-i18n="brand.save">Enregistrer</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Generate Invoice Modal -->
+<div class="modal-overlay" id="invoiceModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <span class="modal-title" data-i18n="invoice.title">Générer une facture</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('invoiceModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="invCarId">
+      <div class="form-group">
+        <label class="form-label" data-i18n="invoice.date">Date</label>
+        <input id="invDate" type="date" class="form-control">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="invoice.buyerName">Nom de l'acheteur *</label>
+        <input id="invBuyerName" class="form-control" placeholder="Nom et prénom" data-i18n-placeholder="invoice.buyerNamePh">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="invoice.buyerPhone">Téléphone</label>
+        <input id="invBuyerPhone" class="form-control" placeholder="0X XX XX XX XX">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('invoiceModal')" data-i18n="invoice.cancel">Annuler</button>
+      <button id="genInvoiceBtn" class="btn btn-primary" onclick="generateInvoicePDF()">
+        <i class="ti ti-file-download"></i> <span data-i18n="invoice.generate">Télécharger le PDF</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/utils.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('cars', t('admin.nav.cars'));
+
+document.getElementById('topbarActions').innerHTML = `
+  <button class="btn btn-primary" onclick="openAddCar()">
+    <i class="ti ti-plus"></i> ${t('car.newTitle')}
+  </button>`;
+
+let allBrands = [];
+let lastCarsList = [];
+let currentFilters = { status: '', brand_id: '', search: '' };
+let stagedFiles = [];       // File objects picked for a NEW car (not yet uploaded)
+let existingImages = [];    // {id, image_url} for a car being EDITED
+
+async function loadBrands() {
+  try {
+    allBrands = await api('GET', '/public/brands');
+  } catch (e) {
+    allBrands = [];
+  }
+}
+
+async function loadCars() {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `
+    <div class="toolbar">
+      <div class="search-box">
+        <i class="ti ti-search"></i>
+        <input id="searchInput" placeholder="${t('car.searchPh')}" value="${currentFilters.search}" oninput="handleSearch(this.value)">
+      </div>
+      <select id="statusFilter" class="form-control" style="max-width:170px" onchange="setFilter('status', this.value)">
+        <option value="">${t('admin.allStatuses')}</option>
+        <option value="pending">${t('carstatus.pending')}</option>
+        <option value="approved">${t('carstatus.approved')}</option>
+        <option value="rejected">${t('carstatus.rejected')}</option>
+        <option value="sold">${t('carstatus.sold')}</option>
+        <option value="expired">${t('carstatus.expired')}</option>
+      </select>
+      <select id="brandFilter" class="form-control" style="max-width:170px" onchange="setFilter('brand_id', this.value)">
+        <option value="">${t('car.allBrands')}</option>
+        ${allBrands.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">${t('car.list')}</span>
+        <span id="countBadge" class="badge badge-gray">—</span>
+      </div>
+      <div class="table-wrap"><div class="loading-center"><div class="spinner"></div></div></div>
+    </div>
+  `;
+  document.getElementById('statusFilter').value = currentFilters.status;
+  document.getElementById('brandFilter').value = currentFilters.brand_id;
+
+  try {
+    const params = new URLSearchParams();
+    if (currentFilters.status) params.set('status', currentFilters.status);
+    if (currentFilters.brand_id) params.set('brand_id', currentFilters.brand_id);
+    if (currentFilters.search) params.set('search', currentFilters.search);
+    params.set('per_page', 50);
+
+    const res = await api('GET', `/admin/cars?${params.toString()}`);
+    const cars = res.data || [];
+    lastCarsList = cars;
+    document.getElementById('countBadge').textContent = res.total ?? cars.length;
+    renderTable(cars);
+  } catch (e) {
+    document.querySelector('.table-wrap').innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>${e.message}</p></div>`;
+  }
+}
+
+let searchTimer;
+function handleSearch(val) {
+  currentFilters.search = val;
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(loadCars, 400);
+}
+function setFilter(key, val) {
+  currentFilters[key] = val;
+  loadCars();
+}
+
+function renderTable(cars) {
+  const wrap = document.querySelector('.table-wrap');
+  if (!cars.length) {
+    wrap.innerHTML = `<div class="empty-state"><i class="ti ti-car"></i><p>${t('car.none')}</p></div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>${t('dash.car')}</th><th class="col-hide-sm">${t('detail.year')}</th><th>${t('admin.price')}</th>
+        <th class="col-hide-sm">${t('car.stock')}</th><th>${t('dash.status')}</th><th class="col-hide-sm">★</th><th>${t('admin.actions')}</th>
+      </tr></thead>
+      <tbody>
+        ${cars.map(c => `
+          <tr>
+            <td>
+              <div class="row-flex">
+                ${c.primary_image ? `<img class="thumb" src="${c.primary_image.image_url}" alt="">` : '<div class="thumb-placeholder"><i class="ti ti-car"></i></div>'}
+                <div>
+                  <div style="font-weight:500">${c.brand?.name || ''} ${c.model}</div>
+                  <div style="font-size:11px;color:var(--text-sub)">${FUEL_LABELS[c.fuel_type] || c.fuel_type} • ${TRANSMISSION_LABELS[c.transmission] || c.transmission}</div>
+                </div>
+              </div>
+            </td>
+            <td class="col-hide-sm">${c.year}</td>
+            <td>${fmtPrice(c.price)}</td>
+            <td class="col-hide-sm">${(c.sold_count ?? 0)}/${c.quantity ?? 1} ${t('car.soldOf')}</td>
+            <td>${carStatusBadge(c.status)}</td>
+            <td class="col-hide-sm">
+              <button class="star-btn ${c.is_featured ? 'active' : ''}" onclick="toggleFeatured(${c.id}, this)" title="${t('car.featuredTitle')}">
+                <i class="ti ${c.is_featured ? 'ti-star-filled' : 'ti-star'}"></i>
+              </button>
+            </td>
+            <td onclick="event.stopPropagation()">
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                <button class="btn btn-ghost btn-sm" onclick="openEditCar(${c.id})" title="${t('car.editTitleShort')}"><i class="ti ti-edit"></i></button>
+                <button class="btn btn-ghost btn-sm" onclick="openInvoice(${c.id})" title="${t('invoice.btnTitle')}"><i class="ti ti-file-invoice"></i></button>
+                ${c.status === 'pending' ? `
+                  <button class="btn btn-sm" style="background:var(--success-light);color:var(--success)" onclick="approveCar(${c.id})" title="${t('car.approveTitle')}"><i class="ti ti-check"></i></button>
+                  <button class="btn btn-sm btn-danger" onclick="rejectCar(${c.id})" title="${t('car.rejectTitle')}"><i class="ti ti-x"></i></button>
+                ` : ''}
+                ${c.status !== 'sold' ? `
+                  <button class="btn btn-ghost btn-sm" onclick="sellUnitCar(${c.id})" title="${t('car.sellUnitTitle')}"><i class="ti ti-shopping-cart"></i></button>
+                  <button class="btn btn-ghost btn-sm" onclick="renewCar(${c.id})" title="${t('car.renewTitle')}"><i class="ti ti-refresh"></i></button>
+                ` : ''}
+                <button class="btn btn-danger btn-sm" onclick="deleteCar(${c.id}, '${((c.brand?.name || '') + ' ' + c.model).replace(/'/g, "\\'")}')" title="${t('car.deleteTitle')}"><i class="ti ti-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// ---------------- Quick row actions ----------------
+async function toggleFeatured(id, btn) {
+  btn.disabled = true;
+  try {
+    await api('PATCH', `/admin/cars/${id}/feature`);
+    loadCars();
+  } catch (e) { showToast(e.message, 'error'); btn.disabled = false; }
+}
+async function approveCar(id) {
+  try { await api('PATCH', `/admin/cars/${id}/approve`); showToast(t('car.approvedToast'), 'success'); loadCars(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+async function rejectCar(id) {
+  if (!confirm(t('car.rejectConfirm'))) return;
+  try { await api('PATCH', `/admin/cars/${id}/reject`); showToast(t('car.rejectedToast'), 'success'); loadCars(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+async function sellUnitCar(id) {
+  if (!confirm(t('car.sellUnitConfirm'))) return;
+  try { await api('PATCH', `/admin/cars/${id}/sell-unit`); showToast(t('car.unitSoldToast'), 'success'); loadCars(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+async function renewCar(id) {
+  try { await api('PATCH', `/admin/cars/${id}/renew`); showToast(t('car.renewedToast'), 'success'); loadCars(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+async function deleteCar(id, label) {
+  if (!confirm(`${t('car.deleteConfirm')} "${label}"${t('car.deleteConfirmSuffix')}`)) return;
+  try { await api('DELETE', `/admin/cars/${id}`); showToast(t('car.deletedToast'), 'success'); loadCars(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+
+// ---------------- Add / Edit modal ----------------
+function resetForm() {
+  ['fBrand','fModel','fYear','fPrice','fMileage','fQuantity','fColor','fWilaya','fCity','fDoors','fDescription']
+    .forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('fFuel').value = 'essence';
+  document.getElementById('fTransmission').value = 'manuelle';
+  document.getElementById('fCondition').value = 'occasion';
+  stagedFiles = [];
+  existingImages = [];
+  renderImageGrid();
+}
+
+function openAddCar() {
+  document.getElementById('carModalTitle').textContent = t('car.newTitle');
+  document.getElementById('carId').value = '';
+  document.getElementById('fBrand').innerHTML = allBrands.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+  resetForm();
+  openModal('carModal');
+}
+
+async function openEditCar(id) {
+  document.getElementById('carModalTitle').textContent = t('car.editTitle');
+  document.getElementById('fBrand').innerHTML = allBrands.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+  openModal('carModal');
+  try {
+    const c = await api('GET', `/public/cars/${id}`);
+    document.getElementById('carId').value = c.id;
+    document.getElementById('fBrand').value = c.brand_id;
+    document.getElementById('fModel').value = c.model || '';
+    document.getElementById('fYear').value = c.year || '';
+    document.getElementById('fPrice').value = c.price || '';
+    document.getElementById('fMileage').value = c.mileage || '';
+    document.getElementById('fQuantity').value = c.quantity || 1;
+    document.getElementById('fFuel').value = c.fuel_type || 'essence';
+    document.getElementById('fTransmission').value = c.transmission || 'manuelle';
+    document.getElementById('fCondition').value = c.condition || 'occasion';
+    document.getElementById('fColor').value = c.color || '';
+    document.getElementById('fWilaya').value = c.wilaya || '';
+    document.getElementById('fCity').value = c.city || '';
+    document.getElementById('fDoors').value = c.doors || '';
+    document.getElementById('fDescription').value = c.description || '';
+
+    stagedFiles = [];
+    existingImages = c.images || [];
+    renderImageGrid();
+  } catch (e) {
+    showToast(e.message, 'error');
+    closeModal('carModal');
+  }
+}
+
+function collectPayload() {
+  return {
+    brand_id: document.getElementById('fBrand').value,
+    model: document.getElementById('fModel').value.trim(),
+    year: document.getElementById('fYear').value,
+    price: document.getElementById('fPrice').value,
+    mileage: document.getElementById('fMileage').value,
+    quantity: document.getElementById('fQuantity').value || 1,
+    fuel_type: document.getElementById('fFuel').value,
+    transmission: document.getElementById('fTransmission').value,
+    condition: document.getElementById('fCondition').value,
+    color: document.getElementById('fColor').value.trim(),
+    wilaya: document.getElementById('fWilaya').value.trim(),
+    city: document.getElementById('fCity').value.trim(),
+    doors: document.getElementById('fDoors').value || null,
+    description: document.getElementById('fDescription').value.trim(),
+  };
+}
+
+async function saveCar() {
+  const id = document.getElementById('carId').value;
+  const payload = collectPayload();
+
+  if (!payload.brand_id || !payload.model || !payload.year || !payload.price || !payload.mileage || !payload.wilaya) {
+    showToast(t('car.requiredFieldsToast'), 'error');
+    return;
+  }
+
+  const btn = document.getElementById('saveCarBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px"></span>';
+
+  try {
+    if (id) {
+      // Existing car: plain JSON update (images are managed separately, live).
+      await api('PUT', `/admin/cars/${id}`, payload);
+      showToast(t('car.updatedToast'), 'success');
+    } else {
+      // New car: multipart, images go along with the payload in one request.
+      const fd = new FormData();
+      Object.entries(payload).forEach(([k, v]) => { if (v !== null && v !== '') fd.append(k, v); });
+      stagedFiles.forEach(f => fd.append('images[]', f));
+      await apiForm('POST', '/admin/cars', fd);
+      showToast(t('car.createdToast'), 'success');
+    }
+    closeModal('carModal');
+    loadCars();
+  } catch (e) {
+    showToast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="ti ti-device-floppy"></i> ${t('brand.save')}`;
+  }
+}
+
+// ---------------- Images ----------------
+function renderImageGrid() {
+  const grid = document.getElementById('imgGrid');
+  const existingHTML = existingImages.map(img => `
+    <div class="img-upload-item">
+      <img src="${img.image_url}" alt="">
+      <button class="remove-img" onclick="deleteExistingImage(${img.id})"><i class="ti ti-x"></i></button>
+    </div>
+  `).join('');
+  const stagedHTML = stagedFiles.map((f, i) => `
+    <div class="img-upload-item">
+      <img src="${URL.createObjectURL(f)}" alt="">
+      <button class="remove-img" onclick="removeStagedFile(${i})"><i class="ti ti-x"></i></button>
+    </div>
+  `).join('');
+  grid.innerHTML = existingHTML + stagedHTML + `
+    <div class="img-upload-add" onclick="document.getElementById('fImages').click()">
+      <i class="ti ti-plus"></i>
+    </div>
+  `;
+}
+
+function handleImageSelect(event) {
+  const files = Array.from(event.target.files || []);
+  const carId = document.getElementById('carId').value;
+
+  if (carId) {
+    // Editing an existing car — upload immediately (matches addImages endpoint design).
+    uploadImagesNow(carId, files);
+  } else {
+    // New car — stage locally, uploaded together on save().
+    stagedFiles = stagedFiles.concat(files);
+    renderImageGrid();
+  }
+  event.target.value = '';
+}
+
+async function uploadImagesNow(carId, files) {
+  if (!files.length) return;
+  const fd = new FormData();
+  files.forEach(f => fd.append('images[]', f));
+  try {
+    const res = await apiForm('POST', `/admin/cars/${carId}/images`, fd);
+    existingImages = res.car?.images || existingImages;
+    renderImageGrid();
+    showToast(t('car.photosAddedToast'), 'success');
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function deleteExistingImage(imageId) {
+  const carId = document.getElementById('carId').value;
+  if (!confirm(t('car.deletePhotoConfirm'))) return;
+  try {
+    await api('DELETE', `/admin/cars/${carId}/images/${imageId}`);
+    existingImages = existingImages.filter(i => i.id !== imageId);
+    renderImageGrid();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+function removeStagedFile(index) {
+  stagedFiles.splice(index, 1);
+  renderImageGrid();
+}
+
+// ---------------- Facture / Invoice ----------------
+function openInvoice(id) {
+  document.getElementById('invCarId').value = id;
+  document.getElementById('invDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('invBuyerName').value = '';
+  document.getElementById('invBuyerPhone').value = '';
+  openModal('invoiceModal');
+}
+
+function generateInvoicePDF() {
+  const id = Number(document.getElementById('invCarId').value);
+  const buyerName = document.getElementById('invBuyerName').value.trim();
+  const buyerPhone = document.getElementById('invBuyerPhone').value.trim();
+  const dateVal = document.getElementById('invDate').value || new Date().toISOString().slice(0, 10);
+
+  if (!buyerName) { showToast(t('invoice.buyerNameRequired'), 'error'); return; }
+
+  const car = lastCarsList.find(c => c.id === id);
+  if (!car) { showToast('Car not found', 'error'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 18;
+  let y = 22;
+
+  // ---- Header ----
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.setTextColor(20, 20, 20);
+  doc.text('AutoWeex', margin, y);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(100, 100, 100);
+  doc.text('Route Nationale, Taher, Wilaya de Jijel, Algérie', margin, y + 6);
+  doc.text('Tél: +213 555 00 00 00  •  contact@autoweex.dz', margin, y + 11);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(20, 20, 20);
+  doc.text(t('invoice.docTitle'), pageW - margin, y, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`${t('invoice.number')}: AW-${dateVal.replace(/-/g, '')}-${id}`, pageW - margin, y + 6, { align: 'right' });
+  doc.text(`${t('invoice.date')}: ${dateVal}`, pageW - margin, y + 11, { align: 'right' });
+
+  y += 22;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, y, pageW - margin, y);
+  y += 10;
+
+  // ---- Seller / Buyer ----
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(20, 20, 20);
+  doc.text(t('invoice.seller'), margin, y);
+  doc.text(t('invoice.buyer'), pageW / 2 + 5, y);
+  y += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  doc.text('AutoWeex — Taher, Jijel', margin, y);
+  doc.text(buyerName, pageW / 2 + 5, y);
+  y += 5;
+  doc.text('+213 555 00 00 00', margin, y);
+  if (buyerPhone) doc.text(buyerPhone, pageW / 2 + 5, y);
+  y += 14;
+
+  // ---- Vehicle details table ----
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(20, 20, 20);
+  doc.text(t('invoice.vehicleDetails'), margin, y);
+  y += 6;
+
+  const brandName = car.brand?.name || '';
+  const rows = [
+    [t('invoice.brand'), brandName],
+    [t('invoice.model'), car.model || '—'],
+    [t('invoice.year'), String(car.year ?? '—')],
+    [t('invoice.mileage'), car.mileage != null ? `${Number(car.mileage).toLocaleString('fr-DZ')} km` : '—'],
+    [t('invoice.color'), car.color || '—'],
+    [t('invoice.fuel'), (typeof FUEL_LABELS !== 'undefined' && FUEL_LABELS[car.fuel_type]) || car.fuel_type || '—'],
+    [t('invoice.transmission'), (typeof TRANSMISSION_LABELS !== 'undefined' && TRANSMISSION_LABELS[car.transmission]) || car.transmission || '—'],
+  ];
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  const rowH = 8;
+  rows.forEach(([label, value], i) => {
+    if (i % 2 === 0) {
+      doc.setFillColor(245, 245, 245);
+      doc.rect(margin, y - 5.5, pageW - margin * 2, rowH, 'F');
+    }
+    doc.setTextColor(100, 100, 100);
+    doc.text(label, margin + 3, y);
+    doc.setTextColor(20, 20, 20);
+    doc.text(String(value), pageW - margin - 3, y, { align: 'right' });
+    y += rowH;
+  });
+
+  y += 6;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, y, pageW - margin, y);
+  y += 10;
+
+  // ---- Total ----
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(60, 60, 60);
+  doc.text(t('invoice.unitPrice'), margin, y);
+  doc.setTextColor(20, 20, 20);
+  doc.text(fmtPrice(car.price), pageW - margin, y, { align: 'right' });
+  y += 10;
+
+  doc.setFillColor(26, 26, 26);
+  doc.rect(margin, y - 7, pageW - margin * 2, 14, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(255, 255, 255);
+  doc.text(t('invoice.total'), margin + 4, y + 2);
+  doc.text(fmtPrice(car.price), pageW - margin - 4, y + 2, { align: 'right' });
+
+  y += 30;
+
+  // ---- Signatures ----
+  const colW = (pageW - margin * 2 - 20) / 2;
+  doc.setDrawColor(150, 150, 150);
+  doc.line(margin, y + 20, margin + colW, y + 20);
+  doc.line(margin + colW + 20, y + 20, margin + colW * 2 + 20, y + 20);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text(t('invoice.sellerSignature'), margin, y + 26);
+  doc.text(t('invoice.buyerSignature'), margin + colW + 20, y + 26);
+
+  // ---- Footer ----
+  doc.setFontSize(9);
+  doc.setTextColor(150, 150, 150);
+  doc.text(t('invoice.thanks'), pageW / 2, 285, { align: 'center' });
+
+  doc.save(`facture-${brandName}-${car.model}-${id}.pdf`.replace(/\s+/g, '-'));
+  showToast(t('invoice.generated'), 'success');
+  closeModal('invoiceModal');
+}
+
+(async function init() {
+  await loadBrands();
+  loadCars();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoWeex — Connexion</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="css/client.css">
+  <style>
+    body.aw {
+      display: flex; align-items: center; justify-content: center; min-height: 100vh;
+      padding: 24px;
+      background:
+        radial-gradient(ellipse 55% 50% at 80% 15%, rgba(158,27,43,.2), transparent 60%),
+        radial-gradient(ellipse 45% 40% at 10% 90%, rgba(201,162,39,.14), transparent 60%),
+        var(--noir);
+    }
+    .auth-wrap { width: 100%; max-width: 400px; }
+    .auth-back { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--texte-sub); margin-bottom: 18px; }
+    .auth-back:hover { color: var(--or); }
+    .auth-card { background: var(--surface); border: 1px solid var(--ligne); border-radius: 18px; padding: 34px 30px; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+    .auth-head { text-align: center; margin-bottom: 26px; }
+    .auth-icon { width: 50px; height: 50px; border-radius: 13px; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--noir); background: linear-gradient(135deg, var(--or-clair), var(--rouge)); }
+    .auth-title { font-family: var(--font-display); font-size: 22px; color: var(--blanc); margin-bottom: 4px; }
+    .auth-sub { font-size: 13px; color: var(--texte-sub); }
+    .auth-group { margin-bottom: 15px; }
+    .auth-group label { display: block; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--texte-muted); margin-bottom: 6px; }
+    .auth-group input {
+      width: 100%; background: var(--noir-3); border: 1px solid var(--ligne); border-radius: 9px;
+      padding: 11px 13px; color: var(--blanc); font-size: 13.8px; outline: none; transition: border-color .18s;
+    }
+    .auth-group input:focus { border-color: var(--or); }
+    .auth-group input.input-error { border-color: var(--rouge-clair); }
+    .auth-err {
+      background: rgba(158,27,43,.14); color: #ff9aa3; border: 1px solid rgba(158,27,43,.4);
+      border-radius: 9px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px;
+      display: none; align-items: center; gap: 8px;
+    }
+    .auth-err.show { display: flex; }
+    .auth-foot { text-align: center; font-size: 13px; color: var(--texte-sub); margin-top: 20px; }
+    .auth-foot a { color: var(--or); font-weight: 600; }
+    .auth-hint { font-size: 11px; color: var(--texte-muted); margin-top: 16px; text-align: center; line-height: 1.6; }
+  </style>
+</head>
+<body class="aw">
+<div class="auth-wrap">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+    <a href="index.html" class="auth-back" style="margin-bottom:0"><i class="ti ti-arrow-left"></i> <span data-i18n="auth.back">Retour au site</span></a>
+    <div style="display:flex;gap:8px;align-items:center"><div id="authLangSwitch"></div><div id="authThemeToggle"></div></div>
+  </div>
+  <div class="auth-card">
+    <div class="auth-head">
+      <div class="auth-icon"><i class="ti ti-steering-wheel"></i></div>
+      <div class="auth-title" data-i18n="auth.loginTitle">Connexion</div>
+      <div class="auth-sub" data-i18n="auth.loginSub">Accédez à votre espace AutoWeex</div>
+    </div>
+
+    <div id="errMsg" class="auth-err">
+      <i class="ti ti-alert-circle" style="font-size:16px;flex-shrink:0"></i>
+      <span id="errText"></span>
+    </div>
+
+    <div class="auth-group">
+      <label data-i18n="auth.email">Adresse e-mail</label>
+      <input id="email" type="email" placeholder="vous@exemple.com" autocomplete="email">
+    </div>
+    <div class="auth-group">
+      <label data-i18n="auth.password">Mot de passe</label>
+      <input id="password" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+
+    <button id="loginBtn" class="aw-btn aw-btn-gold aw-btn-block" onclick="doLogin()">
+      <i class="ti ti-login"></i> <span data-i18n="auth.submitLogin">Se connecter</span>
+    </button>
+
+    <div class="auth-foot"><span data-i18n="auth.noAccount">Pas encore de compte ?</span> <a href="register.html" data-i18n="nav.register">Créer un compte</a></div>
+    <div class="auth-hint">Client, secrétaire ou administrateur : une seule connexion,<br>vous êtes redirigé vers votre espace automatiquement.</div>
+  </div>
+</div>
+
+<script src="js/utils.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/theme.js"></script>
+<script>
+document.getElementById('authLangSwitch').innerHTML = langSwitcherHTML();
+document.getElementById('authThemeToggle').innerHTML = themeToggleHTML();
+</script>
+<script>
+Auth.redirectIfLoggedIn();
+
+const params = new URLSearchParams(window.location.search);
+const redirectTo = params.get('redirect'); // ex: vehicule-detail.html?id=12
+
+document.getElementById('password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+function showError(msg) {
+  const box = document.getElementById('errMsg');
+  document.getElementById('errText').textContent = msg;
+  box.classList.remove('show'); void box.offsetWidth; box.classList.add('show');
+  document.getElementById('email').classList.add('input-error');
+  document.getElementById('password').classList.add('input-error');
+}
+
+function clearError() {
+  document.getElementById('errMsg').classList.remove('show');
+  document.getElementById('email').classList.remove('input-error');
+  document.getElementById('password').classList.remove('input-error');
+}
+
+async function doLogin() {
+  clearError();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  if (!email || !password) {
+    showError("Merci de remplir l'email et le mot de passe.");
+    return;
+  }
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2"></i> Connexion…';
+
+  try {
+    const res = await api('POST', '/login', { email, password });
+    Auth.save(res.token, res.user);
+    // Priorité : redirection explicite (ex: revenir sur une fiche voiture) > espace par défaut du rôle
+    window.location.href = redirectTo || Auth.homeFor(res.user.role);
+  } catch (e) {
+    showError(e.message || 'Email ou mot de passe incorrect');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-login"></i> Se connecter';
+  }
+}
+</script>
+</body>
+</html>

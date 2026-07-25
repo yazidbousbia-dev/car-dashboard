@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Marché — Mon Profil</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+<div class="layout"></div>
+<script src="../js/utils.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('profile', t('admin.nav.profile'));
+
+const user = Auth.getUser();
+
+document.getElementById('pageContent').innerHTML = `
+  <div style="max-width:520px;display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">${t('myprofile.accountInfo')}</span></div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">${t('auth.name')}</label>
+          <input id="fName" class="form-control" value="${user?.name || ''}">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">${t('auth.phone')}</label>
+            <input id="fPhone" class="form-control" value="${user?.phone || ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">${t('auth.wilaya')}</label>
+            <input id="fWilaya" class="form-control" value="${user?.wilaya || ''}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">${t('auth.email')}</label>
+          <input class="form-control" value="${user?.email || ''}" disabled style="opacity:.6">
+        </div>
+        <button id="saveProfileBtn" class="btn btn-primary" onclick="saveProfile()">
+          <i class="ti ti-device-floppy"></i> ${t('myprofile.save')}
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">${t('myprofile.security')}</span></div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">${t('myprofile.currentPassword')}</label>
+          <input id="fCurrentPassword" type="password" class="form-control">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">${t('myprofile.newPassword')}</label>
+            <input id="fNewPassword" type="password" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">${t('auth.confirm')}</label>
+            <input id="fNewPasswordConfirm" type="password" class="form-control">
+          </div>
+        </div>
+        <button id="savePasswordBtn" class="btn btn-primary" onclick="savePassword()">
+          <i class="ti ti-lock"></i> ${t('myprofile.updatePassword')}
+        </button>
+      </div>
+    </div>
+  </div>
+`;
+
+async function saveProfile() {
+  const btn = document.getElementById('saveProfileBtn');
+  btn.disabled = true;
+  const original = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px"></span>';
+
+  try {
+    const res = await api('PUT', '/profile', {
+      name: document.getElementById('fName').value.trim(),
+      phone: document.getElementById('fPhone').value.trim() || null,
+      wilaya: document.getElementById('fWilaya').value.trim() || null,
+    });
+    Auth.save(Auth.getToken(), res.user);
+    showToast(t('myprofile.profileUpdated'), 'success');
+  } catch (e) {
+    showToast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+
+async function savePassword() {
+  const current = document.getElementById('fCurrentPassword').value;
+  const next = document.getElementById('fNewPassword').value;
+  const confirm_ = document.getElementById('fNewPasswordConfirm').value;
+
+  if (!current || !next) {
+    showToast(t('myprofile.fillAllFields'), 'error');
+    return;
+  }
+  if (next !== confirm_) {
+    showToast(t('myprofile.passwordMismatch'), 'error');
+    return;
+  }
+
+  const btn = document.getElementById('savePasswordBtn');
+  btn.disabled = true;
+  const original = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px"></span>';
+
+  try {
+    await api('PUT', '/password', {
+      current_password: current,
+      password: next,
+      password_confirmation: confirm_,
+    });
+    showToast(t('myprofile.passwordUpdated'), 'success');
+    document.getElementById('fCurrentPassword').value = '';
+    document.getElementById('fNewPassword').value = '';
+    document.getElementById('fNewPasswordConfirm').value = '';
+  } catch (e) {
+    showToast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mes favoris — AutoWeex</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="css/client.css">
+</head>
+<body class="aw">
+
+<div id="awNav" class="aw-nav"></div>
+
+<div class="aw-page-header">
+  <div class="aw-container">
+    <div class="aw-breadcrumb"><a href="index.html" data-i18n="nav.home">Accueil</a><span class="sep">/</span><span data-i18n="fav.breadcrumb">Favoris</span></div>
+    <div class="aw-eyebrow" data-i18n="fav.eyebrow">Votre sélection</div>
+    <h1 class="aw-title" data-i18n-html="fav.title">Mes véhicules <em>favoris</em></h1>
+    <p class="aw-sub" data-i18n="fav.sub">Retrouvez ici les véhicules enregistrés, synchronisés avec votre compte AutoWeex.</p>
+  </div>
+</div>
+
+<section class="aw-section" style="padding-top:44px">
+  <div class="aw-container">
+    <div class="aw-cars-grid" id="favGrid">
+      <div class="aw-spinner" style="grid-column:1/-1"></div>
+    </div>
+  </div>
+</section>
+
+<div id="awFooter" class="aw-footer"></div>
+
+<script src="js/utils.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/theme.js"></script>
+<script>
+  // Page protégée : un visiteur non connecté est renvoyé vers login.html
+  // (avec retour automatique sur cette page une fois connecté).
+  Auth.guardClientPage();
+</script>
+<script src="js/client.js"></script>
+<script>
+  awRenderNav('favoris.html');
+
+  const grid = document.getElementById('favGrid');
+
+  awLoadFavorites().then(favCars => {
+    grid.innerHTML = favCars.length
+      ? favCars.map(awCarCard).join('')
+      : '';
+    if (!favCars.length) {
+      grid.outerHTML = `<div class="aw-empty"><i class="ti ti-heart-off"></i><h3>${t('fav.empty.title')}</h3><p>${t('fav.empty.desc')}</p><br><a href="vehicules.html" class="aw-btn aw-btn-gold">${t('fav.empty.cta')}</a></div>`;
+    } else {
+      awObserveNew(grid);
+    }
+  }).catch(err => awCarsGridError(grid, err, () => location.reload()));
+
+  awInitReveal();
+</script>
+</body>
+</html>

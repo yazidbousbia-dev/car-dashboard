@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoWeex — Votre concessionnaire de confiance</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="css/client.css">
+</head>
+<body class="aw">
+
+<div id="awNav" class="aw-nav"></div>
+
+<!-- ================= HERO ================= -->
+<section class="aw-hero">
+  <div class="aw-container aw-hero-grid">
+    <div>
+      <div class="aw-hero-eyebrow"><span class="dot"></span><span data-i18n="home.eyebrow">Concessionnaire premium — Jijel, Algérie</span></div>
+      <h1><span data-i18n="home.title.pre">Trouvez la voiture </span><em data-i18n="home.title.em">faite pour vous</em><span data-i18n="home.title.post">, sans le stress.</span></h1>
+      <p class="lead" data-i18n="home.lead">AutoWeex sélectionne, inspecte et garantit chaque véhicule neuf ou d'occasion de son catalogue. Un accompagnement clair, du premier essai jusqu'aux clés en main.</p>
+      <div class="aw-hero-cta">
+        <a href="vehicules.html" class="aw-btn aw-btn-gold"><i class="ti ti-car"></i> <span data-i18n="home.cta.viewCars">Voir les véhicules</span></a>
+        <a href="a-propos.html#contact" class="aw-btn aw-btn-outline"><i class="ti ti-message-circle"></i> <span data-i18n="home.cta.contact">Nous contacter</span></a>
+      </div>
+      <div class="aw-hero-stats">
+        <div class="aw-hero-stat"><b data-count="180">180+</b><span data-i18n="home.stat.sold">Véhicules vendus</span></div>
+        <div class="aw-hero-stat"><b>4.8/5</b><span data-i18n="home.stat.satisfaction">Satisfaction client</span></div>
+        <div class="aw-hero-stat"><b>9 ans</b><span data-i18n="home.stat.experience">D'expérience</span></div>
+      </div>
+    </div>
+    <div class="aw-hero-visual">
+      <div class="aw-showcard" id="heroShowcard">
+        <div class="aw-showcard-glow"></div>
+        <div class="aw-showcard-stage" id="heroStage"><div class="aw-spinner"></div></div>
+        <div class="aw-showcard-row">
+          <b id="heroCarName">—</b>
+          <span class="price" id="heroCarPrice"></span>
+        </div>
+        <div class="aw-showcard-tags" id="heroCarTags"></div>
+        <div class="aw-showcard-nav">
+          <button type="button" class="aw-showcard-arrow" id="heroPrev" aria-label="Précédent"><i class="ti ti-chevron-left"></i></button>
+          <div class="aw-showcard-dots" id="heroDots"></div>
+          <button type="button" class="aw-showcard-arrow" id="heroNext" aria-label="Suivant"><i class="ti ti-chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="aw-float-badge">
+        <i class="ti ti-shield-check"></i>
+        <div><b data-i18n="home.why.f2.title">Garantie incluse</b><span>Sur tout le catalogue</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="aw-pinstripe"></div>
+
+<!-- ================= VÉHICULES EN VEDETTE ================= -->
+<section class="aw-section">
+  <div class="aw-container">
+    <div class="aw-section-head">
+      <div>
+        <div class="aw-eyebrow" data-i18n="home.featured.eyebrow">Notre sélection</div>
+        <h2 class="aw-title" data-i18n-html="home.featured.title">Véhicules <em>en vedette</em></h2>
+        <p class="aw-sub" data-i18n="home.featured.sub">Un aperçu des modèles les plus demandés cette semaine, inspectés et prêts à prendre la route.</p>
+      </div>
+      <a href="vehicules.html" class="aw-btn aw-btn-outline"><span data-i18n="home.featured.seeAll">Tout le catalogue</span> <i class="ti ti-arrow-right"></i></a>
+    </div>
+    <div class="aw-cars-grid" id="featuredGrid">
+      <div class="aw-spinner" style="grid-column:1/-1"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= POURQUOI AUTOWEEX ================= -->
+<section class="aw-section" style="background:var(--noir-2)">
+  <div class="aw-container">
+    <div class="aw-section-head">
+      <div>
+        <div class="aw-eyebrow" data-i18n="home.why.eyebrow">Notre engagement</div>
+        <h2 class="aw-title" data-i18n-html="home.why.title">Pourquoi choisir <em>AutoWeex</em></h2>
+      </div>
+    </div>
+    <div class="aw-features">
+      <div class="aw-feature aw-reveal">
+        <i class="ti ti-search"></i>
+        <h3 data-i18n="home.why.f1.title">Inspection à 120 points</h3>
+        <p data-i18n="home.why.f1.desc">Chaque véhicule est contrôlé mécaniquement et esthétiquement avant sa mise en vente.</p>
+      </div>
+      <div class="aw-feature aw-reveal">
+        <i class="ti ti-shield-check"></i>
+        <h3 data-i18n="home.why.f2.title">Garantie incluse</h3>
+        <p data-i18n="home.why.f2.desc">Une garantie mécanique couvre les principaux organes sur tous nos véhicules.</p>
+      </div>
+      <div class="aw-feature aw-reveal">
+        <i class="ti ti-credit-card"></i>
+        <h3 data-i18n="home.why.f3.title">Financement facilité</h3>
+        <p data-i18n="home.why.f3.desc">Nous vous orientons vers les meilleures solutions de crédit auto disponibles.</p>
+      </div>
+      <div class="aw-feature aw-reveal">
+        <i class="ti ti-truck-delivery"></i>
+        <h3 data-i18n="home.why.f4.title">Reprise & livraison</h3>
+        <p data-i18n="home.why.f4.desc">Reprenez votre ancien véhicule et faites-vous livrer le nouveau où vous êtes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= AVIS CLIENTS ================= -->
+<section class="aw-section">
+  <div class="aw-container">
+    <div class="aw-section-head">
+      <div>
+        <div class="aw-eyebrow" data-i18n="home.testi.eyebrow">Ils nous font confiance</div>
+        <h2 class="aw-title" data-i18n-html="home.testi.title">Ce que disent <em>nos clients</em></h2>
+      </div>
+    </div>
+    <div class="aw-testi-strip" id="awTestimonials"></div>
+  </div>
+</section>
+
+<!-- ================= CTA ================= -->
+<section class="aw-section" style="padding-top:0">
+  <div class="aw-container">
+    <div class="aw-cta-banner">
+      <h2 data-i18n="home.cta2.title">Une question sur un véhicule ? Parlons-en dès aujourd'hui.</h2>
+      <div class="actions">
+        <a href="a-propos.html#contact" class="aw-btn aw-btn-gold"><i class="ti ti-message-circle"></i> <span data-i18n="home.cta2.message">Envoyer un message</span></a>
+        <a href="tel:+213555000000" class="aw-btn aw-btn-outline" style="border-color:rgba(255,255,255,.4);color:#fff"><i class="ti ti-phone"></i> <span data-i18n="home.cta2.call">Appeler</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="awFooter" class="aw-footer"></div>
+
+<script src="js/utils.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/client.js"></script>
+<script>
+  awRenderNav('index.html');
+  const grid = document.getElementById('featuredGrid');
+
+  // ---- Hero showcase: real cars from the DB, scrollable ----
+  let heroCars = [];
+  let heroIndex = 0;
+  let heroTimer = null;
+
+  function renderHero(car) {
+    if (!car) return;
+    document.getElementById('heroStage').innerHTML = car.image
+      ? `<img src="${car.image}" alt="${(car.brand || '') + ' ' + (car.model || '')}">`
+      : `<div class="ring"></div><i class="ti ti-car"></i>`;
+    document.getElementById('heroCarName').textContent = `${car.brand || ''} ${car.model || ''}`.trim();
+    document.getElementById('heroCarPrice').textContent = fmtPrice(car.price);
+    document.getElementById('heroCarTags').innerHTML = [
+      car.year,
+      FUEL_LABELS[car.fuel_type] || car.fuel_type,
+      TRANSMISSION_LABELS[car.transmission] || car.transmission,
+    ].filter(Boolean).map(v => `<span class="aw-tag">${v}</span>`).join('');
+    document.getElementById('heroShowcard').onclick = () => window.location.href = `vehicule-detail.html?id=${car.id}`;
+    renderHeroDots();
+  }
+
+  function renderHeroDots() {
+    document.getElementById('heroDots').innerHTML = heroCars.map((_, i) =>
+      `<span class="aw-dot ${i === heroIndex ? 'active' : ''}" onclick="event.stopPropagation(); goToHero(${i})"></span>`
+    ).join('');
+  }
+
+  function goToHero(i) {
+    if (!heroCars.length) return;
+    heroIndex = (i + heroCars.length) % heroCars.length;
+    renderHero(heroCars[heroIndex]);
+    resetHeroTimer();
+  }
+  window.goToHero = goToHero;
+
+  function resetHeroTimer() {
+    clearInterval(heroTimer);
+    if (heroCars.length > 1) heroTimer = setInterval(() => goToHero(heroIndex + 1), 5000);
+  }
+
+  document.getElementById('heroPrev').addEventListener('click', (e) => { e.stopPropagation(); goToHero(heroIndex - 1); });
+  document.getElementById('heroNext').addEventListener('click', (e) => { e.stopPropagation(); goToHero(heroIndex + 1); });
+  document.getElementById('heroShowcard').addEventListener('mouseenter', () => clearInterval(heroTimer));
+  document.getElementById('heroShowcard').addEventListener('mouseleave', resetHeroTimer);
+
+  Promise.all([awFetchCars(), awLoadFavoriteIds()])
+    .then(([cars]) => {
+      const featured = cars.filter(c => c.featured).slice(0, 3);
+      const list = featured.length ? featured : cars.slice(0, 3);
+      grid.innerHTML = list.length
+        ? list.map(awCarCard).join('')
+        : `<div class="aw-empty" style="grid-column:1/-1"><i class="ti ti-car-off"></i><h3>Aucun véhicule disponible pour l'instant</h3><p>Revenez bientôt, le catalogue se met à jour régulièrement.</p></div>`;
+      awObserveNew(grid);
+
+      heroCars = (cars.filter(c => c.featured).length ? cars.filter(c => c.featured) : cars).slice(0, 6);
+      if (heroCars.length) {
+        goToHero(0);
+      } else {
+        document.getElementById('heroShowcard').style.display = 'none';
+      }
+    })
+    .catch(err => {
+      awCarsGridError(grid, err, () => location.reload());
+      document.getElementById('heroShowcard').style.display = 'none';
+    });
+  awInitReveal();
+</script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon compte — AutoWeex</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="css/client.css">
+</head>
+<body class="aw">
+
+<div id="awNav" class="aw-nav"></div>
+
+<div class="aw-page-header">
+  <div class="aw-container">
+    <div class="aw-breadcrumb"><a href="index.html">Accueil</a><span class="sep">/</span>Mon compte</div>
+    <div class="aw-eyebrow">Espace client</div>
+    <h1 class="aw-title" id="pageHello">Bonjour <em>…</em></h1>
+    <p class="aw-sub">Gérez votre profil, suivez vos demandes et retrouvez vos favoris.</p>
+  </div>
+</div>
+
+<section class="aw-section" style="padding-top:44px">
+  <div class="aw-container">
+    <div class="aw-tabs">
+      <button class="aw-tab active" data-tab="profil">Mon profil</button>
+      <button class="aw-tab" data-tab="demandes">Mes demandes</button>
+      <button class="aw-tab" data-tab="favoris">Mes favoris</button>
+    </div>
+
+    <!-- ===== PROFIL ===== -->
+    <div class="aw-tab-panel active" id="panel-profil">
+      <div class="aw-contact-grid" style="grid-template-columns:1fr 1fr">
+        <div class="aw-form">
+          <h3 style="font-family:var(--font-display);font-weight:400;color:var(--blanc);font-size:18px;margin-bottom:18px">Informations du compte</h3>
+          <div class="aw-form-group">
+            <label>Nom complet</label>
+            <input id="fName" type="text">
+          </div>
+          <div class="aw-form-row">
+            <div class="aw-form-group">
+              <label>Téléphone</label>
+              <input id="fPhone" type="tel">
+            </div>
+            <div class="aw-form-group">
+              <label>Wilaya</label>
+              <input id="fWilaya" type="text">
+            </div>
+          </div>
+          <div class="aw-form-group">
+            <label>Email</label>
+            <input id="fEmail" type="email" disabled style="opacity:.55">
+          </div>
+          <button id="saveProfileBtn" class="aw-btn aw-btn-gold"><i class="ti ti-device-floppy"></i> Enregistrer</button>
+        </div>
+
+        <div class="aw-form">
+          <h3 style="font-family:var(--font-display);font-weight:400;color:var(--blanc);font-size:18px;margin-bottom:18px">Changer le mot de passe</h3>
+          <div class="aw-form-group">
+            <label>Mot de passe actuel</label>
+            <input id="fCurrentPassword" type="password">
+          </div>
+          <div class="aw-form-row">
+            <div class="aw-form-group">
+              <label>Nouveau mot de passe</label>
+              <input id="fNewPassword" type="password">
+            </div>
+            <div class="aw-form-group">
+              <label>Confirmer</label>
+              <input id="fNewPasswordConfirm" type="password">
+            </div>
+          </div>
+          <button id="savePasswordBtn" class="aw-btn aw-btn-outline"><i class="ti ti-lock"></i> Modifier le mot de passe</button>
+        </div>
+      </div>
+
+      <div class="aw-form" style="margin-top:24px;border-color:rgba(158,27,43,.35)">
+        <h3 style="font-family:var(--font-display);font-weight:400;color:var(--blanc);font-size:18px;margin-bottom:10px">Session</h3>
+        <p class="aw-sub" style="margin-bottom:16px">Déconnectez-vous de votre compte sur cet appareil.</p>
+        <button id="logoutBtn" class="aw-btn aw-btn-outline" style="border-color:var(--rouge-clair);color:var(--rouge-clair)" onclick="logout()"><i class="ti ti-logout"></i> Se déconnecter</button>
+      </div>
+    </div>
+
+    <!-- ===== DEMANDES ===== -->
+    <div class="aw-tab-panel" id="panel-demandes">
+      <div id="reqList"><div class="aw-spinner"></div></div>
+    </div>
+
+    <!-- ===== FAVORIS ===== -->
+    <div class="aw-tab-panel" id="panel-favoris">
+      <div class="aw-cars-grid" id="profFavGrid"><div class="aw-spinner" style="grid-column:1/-1"></div></div>
+    </div>
+  </div>
+</section>
+
+<div id="awFooter" class="aw-footer"></div>
+
+<script src="js/utils.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/theme.js"></script>
+<script>
+  // Page protégée : un visiteur non connecté est renvoyé vers login.html
+  // (avec retour automatique sur cette page une fois connecté).
+  Auth.guardClientPage();
+</script>
+<script src="js/client.js"></script>
+<script>
+  awRenderNav('profile.html');
+
+  const user = Auth.getUser();
+  document.getElementById('pageHello').innerHTML = `Bonjour <em>${(user?.name || '').split(' ')[0] || ''}</em>`;
+  document.getElementById('fName').value = user?.name || '';
+  document.getElementById('fPhone').value = user?.phone || '';
+  document.getElementById('fWilaya').value = user?.wilaya || '';
+  document.getElementById('fEmail').value = user?.email || '';
+
+  // ---- Tabs ----
+  document.querySelectorAll('.aw-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.aw-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.aw-tab-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(`panel-${tab.dataset.tab}`).classList.add('active');
+      if (tab.dataset.tab === 'demandes' && !reqLoaded) loadRequests();
+      if (tab.dataset.tab === 'favoris' && !favLoaded) loadFavorites();
+    });
+  });
+
+  // ---- Profil ----
+  document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('saveProfileBtn');
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader-2"></i>';
+    try {
+      const res = await api('PUT', '/profile', {
+        name: document.getElementById('fName').value.trim(),
+        phone: document.getElementById('fPhone').value.trim() || null,
+        wilaya: document.getElementById('fWilaya').value.trim() || null,
+      });
+      Auth.save(Auth.getToken(), res.user);
+      awToast('Profil mis à jour', 'success');
+    } catch (e) {
+      awToast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = original;
+    }
+  });
+
+  document.getElementById('savePasswordBtn').addEventListener('click', async () => {
+    const current = document.getElementById('fCurrentPassword').value;
+    const next = document.getElementById('fNewPassword').value;
+    const confirm_ = document.getElementById('fNewPasswordConfirm').value;
+    if (!current || !next) { awToast('Merci de remplir tous les champs', 'error'); return; }
+    if (next !== confirm_) { awToast('Les mots de passe ne correspondent pas', 'error'); return; }
+
+    const btn = document.getElementById('savePasswordBtn');
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader-2"></i>';
+    try {
+      await api('PUT', '/password', { current_password: current, password: next, password_confirmation: confirm_ });
+      awToast('Mot de passe modifié avec succès', 'success');
+      document.getElementById('fCurrentPassword').value = '';
+      document.getElementById('fNewPassword').value = '';
+      document.getElementById('fNewPasswordConfirm').value = '';
+    } catch (e) {
+      awToast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = original;
+    }
+  });
+
+  // ---- Mes demandes ----
+  let reqLoaded = false;
+  async function loadRequests() {
+    reqLoaded = true;
+    const wrap = document.getElementById('reqList');
+    try {
+      const json = await api('GET', '/my-requests');
+      const list = Array.isArray(json) ? json : (json.data || []);
+      wrap.innerHTML = list.length ? list.map(r => `
+        <div class="aw-req-row">
+          <div>
+            <div class="car">${r.car?.brand?.name || ''} ${r.car?.model || 'Véhicule'}</div>
+            <div class="meta">${fmtDate ? fmtDate(r.created_at) : r.created_at} ${r.message ? '· ' + r.message : ''}</div>
+          </div>
+          ${awReqStatusBadge(r.status)}
+        </div>`).join('') : `<div class="aw-empty"><i class="ti ti-clipboard-list"></i><h3>Aucune demande envoyée</h3><p>Parcourez le catalogue et faites une demande depuis la fiche d'un véhicule.</p><br><a href="vehicules.html" class="aw-btn aw-btn-gold">Voir les véhicules</a></div>`;
+    } catch (e) {
+      wrap.innerHTML = `<div class="aw-empty"><i class="ti ti-alert-circle"></i><h3>Impossible de charger vos demandes</h3><p>${e.message}</p></div>`;
+    }
+  }
+
+  // ---- Mes favoris ----
+  let favLoaded = false;
+  async function loadFavorites() {
+    favLoaded = true;
+    const grid = document.getElementById('profFavGrid');
+    try {
+      const cars = await awLoadFavorites(true);
+      grid.innerHTML = cars.length ? cars.map(awCarCard).join('')
+        : `<div class="aw-empty" style="grid-column:1/-1"><i class="ti ti-heart-off"></i><h3>Aucun favori</h3><p>Ajoutez des véhicules à vos favoris depuis le catalogue.</p><br><a href="vehicules.html" class="aw-btn aw-btn-gold">Voir les véhicules</a></div>`;
+      awObserveNew(grid);
+    } catch (e) {
+      awCarsGridError(grid, e, loadFavorites);
+    }
+  }
+
+  awInitReveal();
+</script>
+</body>
+</html>

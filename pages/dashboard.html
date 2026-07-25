@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Marché — Tableau de bord</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+<div class="layout"></div>
+<script src="../js/utils.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('dashboard', t('admin.nav.dashboard'));
+
+async function loadDashboard() {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = '<div class="loading-center"><div class="spinner"></div></div>';
+
+  try {
+    const stats = await api('GET', '/admin/stats');
+
+    content.innerHTML = `
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#EFF6FF;color:#2563EB"><i class="ti ti-car"></i></div>
+          <div class="stat-label">${t('dash.totalCars')}</div>
+          <div class="stat-value">${stats.total_cars ?? 0}</div>
+          <div class="stat-sub">${stats.cars_this_month ?? 0} ${t('dash.thisMonth')}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#ECFDF5;color:#059669"><i class="ti ti-circle-check"></i></div>
+          <div class="stat-label">${t('dash.approvedCars')}</div>
+          <div class="stat-value">${stats.approved_cars ?? 0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#F3F4F6;color:#374151"><i class="ti ti-checkbox"></i></div>
+          <div class="stat-label">${t('dash.soldCars')}</div>
+          <div class="stat-value">${stats.sold_cars ?? 0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#FFFBEB;color:#D97706"><i class="ti ti-star"></i></div>
+          <div class="stat-label">${t('dash.featuredCars')}</div>
+          <div class="stat-value">${stats.featured_cars ?? 0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#FEF2F2;color:#DC2626"><i class="ti ti-clock-x"></i></div>
+          <div class="stat-label">${t('dash.expiredCars')}</div>
+          <div class="stat-value">${stats.expired_cars ?? 0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#FEF2F2;color:#DC2626"><i class="ti ti-eye-off"></i></div>
+          <div class="stat-label">${t('dash.rejectedCars')}</div>
+          <div class="stat-value">${stats.hidden_cars ?? 0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#EFF6FF;color:#2563EB"><i class="ti ti-users"></i></div>
+          <div class="stat-label">${t('dash.totalClients')}</div>
+          <div class="stat-value">${stats.total_users ?? 0}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#FFFBEB;color:#D97706"><i class="ti ti-clipboard-list"></i></div>
+          <div class="stat-label">${t('dash.pendingRequests')}</div>
+          <div class="stat-value">${stats.pending_requests ?? 0}</div>
+          <div class="stat-sub">${stats.total_requests ?? 0} ${t('dash.total')}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#FEF2F2;color:#DC2626"><i class="ti ti-flag"></i></div>
+          <div class="stat-label">${t('dash.pendingReports')}</div>
+          <div class="stat-value">${stats.pending_reports ?? 0}</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:16px;margin-bottom:20px">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">${t('dash.mostViewed')}</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>${t('dash.model')}</th><th>${t('dash.views')}</th></tr></thead>
+              <tbody id="mostViewedBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">${t('dash.recentRequests')}</span>
+            <a href="requests.html" class="btn btn-ghost btn-sm">${t('dash.seeAll')}</a>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>${t('dash.client')}</th><th>${t('dash.car')}</th><th>${t('dash.status')}</th></tr></thead>
+              <tbody id="recentRequestsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const mostViewed = stats.most_viewed_cars || [];
+    document.getElementById('mostViewedBody').innerHTML = mostViewed.length
+      ? mostViewed.map(c => `
+          <tr onclick="window.location.href='cars.html'" style="cursor:pointer">
+            <td>${c.model}</td>
+            <td><span class="badge badge-blue">${c.views_count ?? 0} <i class="ti ti-eye" style="margin-inline-start:4px"></i></span></td>
+          </tr>
+        `).join('')
+      : `<tr><td colspan="2" class="empty-state"><i class="ti ti-car"></i><p>${t('dash.noData')}</p></td></tr>`;
+
+    const recentRequests = stats.recent_requests || [];
+    document.getElementById('recentRequestsBody').innerHTML = recentRequests.length
+      ? recentRequests.map(r => `
+          <tr onclick="window.location.href='requests.html'" style="cursor:pointer">
+            <td>${r.user?.name || '—'}</td>
+            <td>${r.car?.model || '—'}</td>
+            <td>${requestStatusBadge(r.status)}</td>
+          </tr>
+        `).join('')
+      : `<tr><td colspan="3" class="empty-state"><i class="ti ti-clipboard-list"></i><p>${t('dash.noRequests')}</p></td></tr>`;
+
+  } catch (e) {
+    content.innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>${e.message}</p></div>`;
+  }
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

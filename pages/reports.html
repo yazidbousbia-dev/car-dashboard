@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Marché — Signalements</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+<div class="layout"></div>
+<script src="../js/utils.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+initLayout('reports', t('admin.nav.reports'));
+
+let currentStatus = '';
+
+async function loadReports() {
+  const content = document.getElementById('pageContent');
+  content.innerHTML = `
+    <div class="toolbar">
+      <select id="statusFilter" class="form-control" style="max-width:200px" onchange="setStatus(this.value)">
+        <option value="">${t('admin.allStatuses')}</option>
+        <option value="pending">${t('status.pending')}</option>
+        <option value="resolved">${t('report.resolved')}</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">${t('report.title')}</span>
+        <span id="countBadge" class="badge badge-gray">—</span>
+      </div>
+      <div class="table-wrap"><div class="loading-center"><div class="spinner"></div></div></div>
+    </div>
+  `;
+  document.getElementById('statusFilter').value = currentStatus;
+
+  try {
+    const params = new URLSearchParams();
+    if (currentStatus) params.set('status', currentStatus);
+    const res = await api('GET', `/admin/reports?${params.toString()}`);
+    const reports = res.data || [];
+    document.getElementById('countBadge').textContent = res.total ?? reports.length;
+    renderTable(reports);
+  } catch (e) {
+    document.querySelector('.table-wrap').innerHTML = `<div class="empty-state"><i class="ti ti-alert-circle"></i><p>${e.message}</p></div>`;
+  }
+}
+
+function setStatus(val) {
+  currentStatus = val;
+  loadReports();
+}
+
+function renderTable(reports) {
+  const wrap = document.querySelector('.table-wrap');
+  if (!reports.length) {
+    wrap.innerHTML = `<div class="empty-state"><i class="ti ti-flag"></i><p>${t('report.none')}</p></div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>${t('dash.car')}</th><th>${t('report.reportedBy')}</th><th>${t('report.reason')}</th><th class="col-hide-sm">${t('admin.date')}</th><th>${t('dash.status')}</th><th>${t('admin.actions')}</th>
+      </tr></thead>
+      <tbody>
+        ${reports.map(r => `
+          <tr>
+            <td style="font-weight:500">${r.car?.model || '—'}</td>
+            <td>${r.user?.name || '—'}</td>
+            <td>${r.reason || '—'}</td>
+            <td class="col-hide-sm">${fmtDate(r.created_at)}</td>
+            <td>${reportStatusBadge(r.status)}</td>
+            <td>
+              ${r.status !== 'resolved' ? `
+                <button class="btn btn-sm" style="background:var(--success-light);color:var(--success)" onclick="resolveReport(${r.id})">
+                  <i class="ti ti-check"></i> ${t('report.resolve')}
+                </button>
+              ` : '<span style="color:var(--text-muted);font-size:12px">—</span>'}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function resolveReport(id) {
+  try {
+    await api('PATCH', `/admin/reports/${id}/resolve`);
+    showToast(t('report.resolvedToast'), 'success');
+    loadReports();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+loadReports();
+</script>
+</body>
+</html>
