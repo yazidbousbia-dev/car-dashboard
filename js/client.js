@@ -277,9 +277,31 @@ function awRenderNav(active) {
     </div>`;
 
   window.addEventListener('scroll', () => el.classList.toggle('scrolled', window.scrollY > 30), { passive: true });
-  document.getElementById('awMenuBtn')?.addEventListener('click', () => document.getElementById('awDrawer').classList.add('open'));
-  document.getElementById('awDrawerClose')?.addEventListener('click', () => document.getElementById('awDrawer').classList.remove('open'));
-  document.getElementById('awDrawer')?.addEventListener('click', (e) => { if (e.target.id === 'awDrawer') e.target.classList.remove('open'); });
+  let awScrollY = 0;
+  function awLockScroll() {
+    awScrollY = window.scrollY;
+    document.body.style.top = `-${awScrollY}px`;
+    document.body.classList.add('aw-no-scroll');
+  }
+  function awUnlockScroll() {
+    document.body.classList.remove('aw-no-scroll');
+    document.body.style.top = '';
+    window.scrollTo(0, awScrollY);
+  }
+  document.getElementById('awMenuBtn')?.addEventListener('click', () => {
+    document.getElementById('awDrawer').classList.add('open');
+    awLockScroll();
+  });
+  document.getElementById('awDrawerClose')?.addEventListener('click', () => {
+    document.getElementById('awDrawer').classList.remove('open');
+    awUnlockScroll();
+  });
+  document.getElementById('awDrawer')?.addEventListener('click', (e) => {
+    if (e.target.id === 'awDrawer') {
+      e.target.classList.remove('open');
+      awUnlockScroll();
+    }
+  });
 
   awLoadFavoriteIds().then(updateFavCountBadge);
 }
